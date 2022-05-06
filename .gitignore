@@ -32,3 +32,7 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# artifacts
+zkp/magic_square
+zpk/*.json
