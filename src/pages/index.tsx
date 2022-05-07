@@ -12,6 +12,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { ZoKratesProvider } from "zokrates-js";
 import { Container } from "../components/Container";
 import { MagicSquare } from "../components/MagicSquare";
+import { cloneDeep } from "lodash";
 
 const initialize = async () => (await import("zokrates-js")).initialize();
 
@@ -33,6 +34,7 @@ const Index = (props) => {
     };
     load();
   }, []);
+
 
   const [values, setValues] = useState([
     ["", "", "7"],
@@ -117,7 +119,7 @@ const Index = (props) => {
             <Text
               color="gray.500"
               fontSize="sm"
-              onClick={() => setValues(solution)}
+              onClick={() => setValues(cloneDeep(solution))}
               cursor="pointer"
             >
               Show solution
