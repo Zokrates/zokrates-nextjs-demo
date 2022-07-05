@@ -12,6 +12,7 @@
     "@chakra-ui/react": "1.8.8",
     "@emotion/react": "^11",
     "@emotion/styled": "^11",
+    "chakra-ui-steps": "^1.7.3",
     "framer-motion": "^6",
     "lodash": "^4.17.21",
     "next": "latest",

@@ -27,4 +27,3 @@ def main(private field[9] a, field sum):
     assert(a[2] + a[4] + a[6] == sum)
     return
 
-
