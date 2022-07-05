@@ -12,12 +12,13 @@ import {
 import { readFile } from "fs/promises";
 import { FormEvent, useEffect, useState } from "react";
 import { ZoKratesProvider } from "zokrates-js";
-import { Container } from "../components/Container";
+import { MainContainer } from "../components/MainContainer";
 import { MagicSquare } from "../components/MagicSquare";
 import { cloneDeep } from "lodash";
 import { Step, Steps, useSteps } from "chakra-ui-steps";
 import Image from "next/image";
 import ConclusionPicture from "../../public/conclusion.png";
+import { SourceCodeModal } from "../components/SourceCodeModal";
 
 const initialize = async () => (await import("zokrates-js")).initialize();
 
@@ -82,7 +83,7 @@ const Index = (props) => {
         setProof(proof);
         toast({
           title: "Yay!",
-          description: "Your solution seems to be correct :)",
+          description: "Your solution is correct :)",
           position: "top",
           status: "success",
           duration: 5000,
@@ -110,7 +111,7 @@ const Index = (props) => {
       if (zokratesProvider.verify(props.verificationKey, proof)) {
         toast({
           title: "Yes!",
-          description: "Generated proof has been successfully verified :)",
+          description: "Successfully verified Alice's proof :)",
           position: "top",
           status: "success",
           duration: 5000,
@@ -141,111 +142,104 @@ const Index = (props) => {
   };
 
   return (
-    <Container p={4} justifyContent="center" bg="white">
-      <Flex maxWidth={"1000px"}>
-        <Steps activeStep={activeStep} orientation="vertical">
-          <Step label={"Alice the Prover"} key={"Alice the Prover"} py={2}>
-            <form onSubmit={(e) => onSubmit(e)}>
-              <Stack
-                spacing="1.5rem"
-                width="100%"
-                maxWidth="48rem"
-                alignItems="center"
-                p="1rem"
-              >
-                <Flex direction="column" alignItems={"center"}>
-                  <MagicSquare
-                    values={values}
-                    onValueChange={(r, c, v) => onValueChange(r, c, v)}
-                    marginBottom="2"
-                  />
-                  <Text
-                    color="gray.500"
-                    fontSize="sm"
-                    onClick={() => setValues(cloneDeep(solution))}
-                    cursor="pointer"
-                  >
-                    Show solution
-                  </Text>
-                </Flex>
-                <Text color="text" fontSize="lg">
-                  This is a{" "}
-                  <Text as="span" fontWeight="bold">
-                    Magic Square
-                  </Text>
-                  . This means that the numbers add up to the same total in
-                  every direction. Every row, column and diagonal should add up
-                  to <Code>111</Code>. Fill the missing fields and prove to the
-                  verifier that you know the solution without revealing the
-                  values!
+    <MainContainer p={4} justifyContent="center" bg="white" maxWidth="48rem">
+      <Steps activeStep={activeStep} orientation="vertical">
+        <Step label="Alice the Prover" key="prover" py={2}>
+          <form onSubmit={(e) => onSubmit(e)}>
+            <Stack spacing="1.5rem" width="100%" alignItems="center" p={1}>
+              <Flex direction="column" alignItems="center">
+                <MagicSquare
+                  values={values}
+                  onValueChange={(r, c, v) => onValueChange(r, c, v)}
+                  marginBottom={2}
+                />
+                <Text
+                  color="gray.500"
+                  fontSize="sm"
+                  onClick={() => setValues(cloneDeep(solution))}
+                  cursor="pointer"
+                >
+                  Show solution
                 </Text>
-                <Flex gap={2}>
-                  <Button
-                    isLoading={isLoading}
-                    loadingText="Proving..."
-                    colorScheme="teal"
-                    variant="solid"
-                    type="submit"
-                  >
-                    Generate a proof
-                  </Button>
-                  {proof && (
-                    <Button>
-                      <Button variant="solid" type="button" onClick={nextStep}>
-                        Next step
-                      </Button>
-                    </Button>
-                  )}
-                </Flex>
-                {proof && (
-                  <Grid>
-                    <Code
-                      whiteSpace="pre"
-                      overflow="scroll"
-                      textAlign="left"
-                      p={2}
-                      mb={2}
-                    >
-                      {JSON.stringify(proof, null, 2)}
-                    </Code>
-                  </Grid>
-                )}
-              </Stack>
-            </form>
-          </Step>
-          <Step label={"Bob the Verifer"} key={"Bob the Verifier"} py={2}>
-            <Stack
-              spacing="1.5rem"
-              width="100%"
-              maxWidth="48rem"
-              alignItems="center"
-              p="1rem"
-            >
-              <Image src={ConclusionPicture} alt="conclusion" />
+              </Flex>
               <Text color="text" fontSize="lg">
-                Did Alice run the computation successfully? Does Alice know the
-                right solution? Good questions, let's find out.
+                This is a{" "}
+                <Text as="span" fontWeight="bold">
+                  Magic Square
+                </Text>
+                . This means that the numbers add up to the same total in every
+                direction. Every row, column and diagonal should add up to{" "}
+                <Code>111</Code>. Fill the missing fields and prove to the
+                verifier that you know the solution without revealing the
+                values!
               </Text>
-              <Flex gap={2}>
+              <Flex gap={2} flexWrap={"wrap"}>
                 <Button
                   isLoading={isLoading}
-                  loadingText="Verifying..."
+                  loadingText="Proving..."
                   colorScheme="teal"
                   variant="solid"
-                  type="button"
-                  onClick={verify}
+                  type="submit"
                 >
-                  Verify
+                  Generate a proof
                 </Button>
-                <Button variant="solid" type="button" onClick={resetSteps}>
-                  Reset
-                </Button>
+                <SourceCodeModal source={props.source} />
+                {proof && (
+                  <Button>
+                    <Button variant="solid" type="button" onClick={nextStep}>
+                      Next step
+                    </Button>
+                  </Button>
+                )}
               </Flex>
+              {proof && (
+                <Flex maxW="100%">
+                  <Code
+                    whiteSpace="pre"
+                    overflow="scroll"
+                    textAlign="left"
+                    p={2}
+                    mb={2}
+                  >
+                    {JSON.stringify(proof, null, 2)}
+                  </Code>
+                </Flex>
+              )}
             </Stack>
-          </Step>
-        </Steps>
-      </Flex>
-      <Flex as="footer" py="8rem">
+          </form>
+        </Step>
+        <Step label="Bob the Verifer" key="verifier" py={2}>
+          <Stack
+            spacing="1.5rem"
+            width="100%"
+            maxWidth="48rem"
+            alignItems="center"
+            p="1rem"
+          >
+            <Image src={ConclusionPicture} alt="conclusion" />
+            <Text color="text" fontSize="lg">
+              Did Alice run the computation successfully? Does Alice know the
+              right solution? Good questions, let's find out.
+            </Text>
+            <Flex gap={2}>
+              <Button
+                isLoading={isLoading}
+                loadingText="Verifying..."
+                colorScheme="teal"
+                variant="solid"
+                type="button"
+                onClick={verify}
+              >
+                Verify
+              </Button>
+              <Button variant="solid" type="button" onClick={resetSteps}>
+                Reset
+              </Button>
+            </Flex>
+          </Stack>
+        </Step>
+      </Steps>
+      <Flex as="footer" py="8rem" justifyContent="center">
         <Text color="gray.500">
           Made by{" "}
           <Link color="teal" href="https://github.com/Zokrates/ZoKrates">
@@ -253,7 +247,7 @@ const Index = (props) => {
           </Link>
         </Text>
       </Flex>
-    </Container>
+    </MainContainer>
   );
 };
 
