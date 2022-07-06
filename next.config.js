@@ -1,4 +1,6 @@
 module.exports = {
+  // basePath: "/zokrates-nextjs-demo",
+  // assetPrefix: "/zokrates-nextjs-demo/",
   reactStrictMode: true,
   experimental: {
     images: {
