@@ -8,7 +8,7 @@ module.exports = {
     },
   },
   webpack: function (config) {
-    config.experiments = { asyncWebAssembly: true };
+    config.experiments = { syncWebAssembly: true };
     config.ignoreWarnings = [
       {
         module: /zokrates-js/,
