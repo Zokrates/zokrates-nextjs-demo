@@ -1,26 +1,21 @@
 import {
-  Box,
   Button,
   Code,
-  Flex,
-  Grid,
-  Link,
+  Flex, Link,
   Stack,
   Text,
-  useToast,
+  useToast
 } from "@chakra-ui/react";
-import { readFile } from "fs/promises";
-import { FormEvent, useEffect, useState } from "react";
-import { ZoKratesProvider } from "zokrates-js";
-import { MainContainer } from "../components/MainContainer";
-import { MagicSquare } from "../components/MagicSquare";
-import { cloneDeep } from "lodash";
 import { Step, Steps, useSteps } from "chakra-ui-steps";
+import { readFile } from "fs/promises";
+import { cloneDeep } from "lodash";
 import Image from "next/image";
+import { FormEvent, useEffect, useState } from "react";
+import { initialize, ZoKratesProvider } from "zokrates-js";
 import ConclusionPicture from "../../public/conclusion.png";
+import { MagicSquare } from "../components/MagicSquare";
+import { MainContainer } from "../components/MainContainer";
 import { SourceCodeModal } from "../components/SourceCodeModal";
-
-const initialize = async () => (await import("zokrates-js")).initialize();
 
 const solution = [
   ["31", "73", "7"],
@@ -108,19 +103,24 @@ const Index = (props) => {
   const verify = () => {
     setIsLoading(true);
     setTimeout(() => {
-      if (zokratesProvider.verify(props.verificationKey, proof)) {
-        toast({
-          title: "Yes!",
-          description: "Successfully verified Alice's proof :)",
-          position: "top",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
-      } else {
+      try {
+        if (zokratesProvider.verify(props.verificationKey, proof)) {
+          toast({
+            title: "Yes!",
+            description: "Successfully verified Alice's proof :)",
+            position: "top",
+            status: "success",
+            duration: 5000,
+            isClosable: true,
+          });
+        } else {
+          throw new Error("Verification failed :(");
+        }
+      } catch (e) {
+        console.error(e);
         toast({
           title: "Whoops!",
-          description: "Verification failed :(",
+          description: e.toString(),
           position: "top",
           status: "error",
           duration: 5000,
@@ -138,6 +138,7 @@ const Index = (props) => {
   const resetSteps = () => {
     setValues(defaultValues);
     setProof(null);
+    setIsLoading(false);
     reset();
   };
 

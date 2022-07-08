@@ -15,5 +15,10 @@
       "type": "field"
     }
   ],
-  "outputs": []
+  "output": {
+    "type": "tuple",
+    "components": {
+      "elements": []
+    }
+  }
 }
