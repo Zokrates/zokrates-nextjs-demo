@@ -1,3 +1,5 @@
+const path = require("path");
+
 module.exports = {
   // basePath: "/zokrates-nextjs-demo",
   // assetPrefix: "/zokrates-nextjs-demo/",
@@ -14,6 +16,10 @@ module.exports = {
         module: /zokrates-js/,
       },
     ];
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+    };
     return config;
   },
 };

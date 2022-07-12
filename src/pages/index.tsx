@@ -1,10 +1,11 @@
 import {
   Button,
   Code,
-  Flex, Link,
+  Flex,
+  Link,
   Stack,
   Text,
-  useToast
+  useToast,
 } from "@chakra-ui/react";
 import { Step, Steps, useSteps } from "chakra-ui-steps";
 import { readFile } from "fs/promises";
@@ -16,6 +17,8 @@ import ConclusionPicture from "../../public/conclusion.png";
 import { MagicSquare } from "../components/MagicSquare";
 import { MainContainer } from "../components/MainContainer";
 import { SourceCodeModal } from "../components/SourceCodeModal";
+
+const snarkjs = require("snarkjs");
 
 const solution = [
   ["31", "73", "7"],
@@ -58,24 +61,34 @@ const Index = (props) => {
     setIsLoading(true);
     setProof(null);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         const program = Uint8Array.from(Buffer.from(props.program, "hex"));
         const inputs = values.flat();
 
-        const { witness } = zokratesProvider.computeWitness(program, [
-          ...inputs,
-          "111",
-        ]);
-
-        const provingKey = new Uint8Array(Buffer.from(props.provingKey, "hex"));
-        const proof = zokratesProvider.generateProof(
+        const output = zokratesProvider.computeWitness(
           program,
-          witness,
+          [...inputs, "111"],
+          { snarkjs: true }
+        );
+
+        const provingKey = Uint8Array.from(
+          Buffer.from(props.provingKey, "hex")
+        );
+        const zokratesProof = zokratesProvider.generateProof(
+          program,
+          output.witness,
           provingKey
         );
 
-        setProof(proof);
+        // optionally we can use snarkjs to prove :)
+        const zkey = Uint8Array.from(Buffer.from(props.snarkjs.zkey, "hex"));
+        const snarkjsProof = await snarkjs.groth16.prove(
+          zkey,
+          output.snarkjs.witness
+        );
+
+        setProof({ zokratesProof, snarkjsProof });
         toast({
           title: "Yay!",
           description: "Your solution is correct :)",
@@ -97,17 +110,27 @@ const Index = (props) => {
       }
 
       setIsLoading(false);
-    }, 300);
+    }, 100);
   };
 
   const verify = () => {
     setIsLoading(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        if (zokratesProvider.verify(props.verificationKey, proof)) {
+        const { zokratesProof, snarkjsProof } = proof;
+        if (
+          // verify using zokrates
+          zokratesProvider.verify(props.verificationKey, zokratesProof) &&
+          // or with snarkjs
+          (await snarkjs.groth16.verify(
+            props.snarkjs.vkey,
+            snarkjsProof.publicSignals,
+            snarkjsProof.proof
+          ))
+        ) {
           toast({
             title: "Yes!",
-            description: "Successfully verified Alice's proof :)",
+            description: "Victor successfully verified Peggy's proof :)",
             position: "top",
             status: "success",
             duration: 5000,
@@ -128,7 +151,7 @@ const Index = (props) => {
         });
       }
       setIsLoading(false);
-    }, 300);
+    }, 100);
   };
 
   const { nextStep, reset, activeStep } = useSteps({
@@ -145,7 +168,7 @@ const Index = (props) => {
   return (
     <MainContainer p={4} justifyContent="center" bg="white" maxWidth="48rem">
       <Steps activeStep={activeStep} orientation="vertical">
-        <Step label="Alice the Prover" key="prover" py={2}>
+        <Step label="Peggy (the prover)" key="prover" py={2}>
           <form onSubmit={(e) => onSubmit(e)}>
             <Stack spacing="1.5rem" width="100%" alignItems="center" p={1}>
               <Flex direction="column" alignItems="center">
@@ -185,16 +208,9 @@ const Index = (props) => {
                   Generate a proof
                 </Button>
                 <SourceCodeModal source={props.source} />
-                {proof && (
-                  <Button>
-                    <Button variant="solid" type="button" onClick={nextStep}>
-                      Next step
-                    </Button>
-                  </Button>
-                )}
               </Flex>
               {proof && (
-                <Flex maxW="100%">
+                <Flex maxW="100%" direction="column">
                   <Code
                     whiteSpace="pre"
                     overflow="scroll"
@@ -202,14 +218,22 @@ const Index = (props) => {
                     p={2}
                     mb={2}
                   >
-                    {JSON.stringify(proof, null, 2)}
+                    {JSON.stringify(proof.zokratesProof, null, 2)}
                   </Code>
+                  <Button
+                    variant="solid"
+                    type="button"
+                    colorScheme="teal"
+                    onClick={nextStep}
+                  >
+                    Next step
+                  </Button>
                 </Flex>
               )}
             </Stack>
           </form>
         </Step>
-        <Step label="Bob the Verifer" key="verifier" py={2}>
+        <Step label="Victor (the verifier)" key="verifier" py={2}>
           <Stack
             spacing="1.5rem"
             width="100%"
@@ -219,7 +243,7 @@ const Index = (props) => {
           >
             <Image src={ConclusionPicture} alt="conclusion" />
             <Text color="text" fontSize="lg">
-              Did Alice run the computation successfully? Does Alice know the
+              Did Peggy run the computation successfully? Does Peggy know the
               right solution? Good questions, let's find out.
             </Text>
             <Flex gap={2}>
@@ -240,7 +264,17 @@ const Index = (props) => {
           </Stack>
         </Step>
       </Steps>
-      <Flex as="footer" py="8rem" justifyContent="center">
+      <Flex as="footer" py="8rem" alignItems="center" direction="column">
+        <Text color="gray.500">
+          Check the source code of this demo{" "}
+          <Link
+            color="teal"
+            href="https://github.com/dark64/zokrates-nextjs-demo"
+          >
+            here
+          </Link>
+          .
+        </Text>
         <Text color="gray.500">
           Made by{" "}
           <Link color="teal" href="https://github.com/Zokrates/ZoKrates">
@@ -253,19 +287,32 @@ const Index = (props) => {
 };
 
 export async function getStaticProps() {
+  // zokrates artifacts
   const source = (await readFile("zkp/magic_square.zok")).toString();
   const program = (await readFile("zkp/magic_square")).toString("hex");
-
   const verificationKey = JSON.parse(
     (await readFile("zkp/verification.key")).toString()
   );
   const provingKey = (await readFile("zkp/proving.key")).toString("hex");
+
+  // snarkjs artifacts
+  const zkey = (await readFile("zkp/snarkjs/magic_square.zkey")).toString(
+    "hex"
+  );
+  const vkey = JSON.parse(
+    (await readFile("zkp/snarkjs/verification_key.json")).toString()
+  );
+
   return {
     props: {
       source,
       program,
       verificationKey,
       provingKey,
+      snarkjs: {
+        zkey,
+        vkey,
+      },
     },
   };
 }
