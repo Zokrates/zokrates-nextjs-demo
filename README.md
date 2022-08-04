@@ -1,1 +1,1 @@
-Live demo: [https://dark64.github.io/zokrates-nextjs-demo/](https://dark64.github.io/zokrates-nextjs-demo/)
+Live demo: [https://zokrates.github.io/zokrates-nextjs-demo/](https://zokrates.github.io/zokrates-nextjs-demo/)
